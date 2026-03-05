@@ -179,10 +179,24 @@ install_formatting() {
   info "Checking for formatting tools..."
   local missing_tools=()
 
+  # Shell
   command -v shellcheck &>/dev/null || missing_tools+=("shellcheck")
   command -v shfmt &>/dev/null || missing_tools+=("shfmt")
+  # JS/TS/JSON/YAML/Markdown
   command -v prettier &>/dev/null || missing_tools+=("prettier")
   command -v eslint &>/dev/null || missing_tools+=("eslint")
+  # Python
+  command -v ruff &>/dev/null || missing_tools+=("ruff")
+  # Go
+  command -v gofmt &>/dev/null || missing_tools+=("gofmt")
+  command -v golangci-lint &>/dev/null || missing_tools+=("golangci-lint")
+  # Rust
+  command -v rustfmt &>/dev/null || missing_tools+=("rustfmt")
+  # Terraform
+  command -v terraform &>/dev/null || missing_tools+=("terraform")
+  command -v tflint &>/dev/null || missing_tools+=("tflint")
+  # Ansible
+  command -v ansible-lint &>/dev/null || missing_tools+=("ansible-lint")
 
   if [ ${#missing_tools[@]} -gt 0 ]; then
     warning "Missing formatting tools: ${missing_tools[*]}"
@@ -191,10 +205,10 @@ install_formatting() {
     for tool in "${missing_tools[@]}"; do
       case $tool in
         shellcheck)
-          echo "  npm install -g shellcheck  (or: apt install shellcheck / brew install shellcheck)"
+          echo "  apt install shellcheck  (or: brew install shellcheck)"
           ;;
         shfmt)
-          echo "  npm install -g shfmt  (or: brew install shfmt / go install mvdan.cc/sh/v3/cmd/shfmt@latest)"
+          echo "  brew install shfmt  (or: go install mvdan.cc/sh/v3/cmd/shfmt@latest)"
           ;;
         prettier)
           echo "  npm install -g prettier"
@@ -202,21 +216,32 @@ install_formatting() {
         eslint)
           echo "  npm install -g eslint"
           ;;
+        ruff)
+          echo "  pip install ruff  (or: pipx install ruff)"
+          ;;
+        gofmt)
+          echo "  Install Go from https://go.dev (gofmt is included)"
+          ;;
+        golangci-lint)
+          echo "  go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest  (or: brew install golangci-lint)"
+          ;;
+        rustfmt)
+          echo "  rustup component add rustfmt"
+          ;;
+        terraform)
+          echo "  Install from https://developer.hashicorp.com/terraform/install"
+          ;;
+        tflint)
+          echo "  brew install tflint  (or: curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash)"
+          ;;
+        ansible-lint)
+          echo "  pip install ansible-lint  (or: pipx install ansible-lint)"
+          ;;
       esac
     done
     echo ""
 
-    if [ "$AUTO_INSTALL_TOOLS" = "true" ]; then
-      info "Auto-installing tools with npm..."
-      for tool in "${missing_tools[@]}"; do
-        if command -v npm &>/dev/null; then
-          npm install -g "$tool" &>/dev/null && success "Installed $tool" || warning "Failed to install $tool"
-        fi
-      done
-    else
-      warning "Some formatters are missing. The pre-commit hook will skip files that require these tools."
-      warning "Run with --auto-install-tools to automatically install missing tools."
-    fi
+    warning "Only tools relevant to your project are needed. The pre-commit hook will skip files that require missing tools."
   else
     success "All formatting tools are installed"
   fi
@@ -225,28 +250,21 @@ install_formatting() {
 # Show Claude Code instructions
 show_claude_code_instructions() {
   echo ""
-  info "To automatically load principles when starting Claude Code sessions:"
+  info "To automatically load principles in Claude Code / AI agents:"
   echo ""
-  echo "1. Open or create: ~/.claude/settings.json"
-  echo "2. Add the following configuration:"
+  echo "  Add a CLAUDE.md or AGENTS.md to your repo root with the initialization"
+  echo "  script from this repository. See the project README for the full snippet."
   echo ""
-  echo '{'
-  echo '  "sessionStartHooks": ['
-  echo '    {'
-  echo '      "name": "Load Coding Principles",'
-  echo '      "command": "bash",'
-  echo '      "args": ["-c", "~/.local/share/claude-principles/fetch-principles.sh && cat /tmp/claude-principles-active.md"],'
-  echo '      "timeout": 30000'
-  echo '    }'
-  echo '  ]'
-  echo '}'
+  echo "  The init script will:"
+  echo "    1. Clone/update the principles repo to /tmp/claude-principles-repo"
+  echo "    2. Install git hooks (formatting, linting, principles auto-update)"
+  echo "    3. Auto-detect technologies and load relevant principles"
+  echo "    4. Merge Claude Code permissions into ~/.claude/settings.json"
   echo ""
-  echo "Note: You may need to adjust the path to fetch-principles.sh based on where you installed it."
-  echo "For example, use the full path: $PWD/$INSTALL_DIR/fetch-principles.sh"
+  echo "  Hooks and principles auto-refresh on every git checkout, merge, and"
+  echo "  Claude Code session start -- no manual updates needed."
   echo ""
-  info "Claude Code permissions from claude-settings.json are automatically merged"
-  info "into ~/.claude/settings.json when fetch-principles.sh runs."
-  info "Set SKIP_SETTINGS=true to disable settings sync."
+  info "Set SKIP_SETTINGS=true to disable automatic settings sync."
   echo ""
 }
 
@@ -286,9 +304,9 @@ uninstall_hooks() {
 # Main installation flow
 main() {
   echo ""
-  echo "╔══════════════════════════════════════════════════════╗"
-  echo "║  Coding Principles Hook Installer                   ║"
-  echo "╚══════════════════════════════════════════════════════╝"
+  echo "╔════════════════════════════════════════╗"
+  echo "║  Coding Principles Hook Installer      ║"
+  echo "╚════════════════════════════════════════╝"
   echo ""
 
   # Handle uninstall
@@ -358,9 +376,9 @@ main() {
 
   # Success summary
   echo ""
-  echo "╔══════════════════════════════════════════════════════╗"
-  echo "║  Installation Complete!                              ║"
-  echo "╚══════════════════════════════════════════════════════╝"
+  echo "╔════════════════════════════════════════╗"
+  echo "║  Installation Complete!                ║"
+  echo "╚════════════════════════════════════════╝"
   echo ""
 
   if [ "$INSTALL_PRINCIPLES" = "true" ]; then

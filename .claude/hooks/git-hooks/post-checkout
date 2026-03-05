@@ -9,11 +9,14 @@ if [ "$3" != "1" ]; then
 fi
 
 # Find the fetch-principles.sh script
+# Prefer the source copy (repo's own or principles repo clone) over the installed copy
 SCRIPT_DIR="$(dirname "$0")"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 FETCH_SCRIPT=""
 
-# Try multiple locations
 for path in \
+  "$REPO_ROOT/.claude/hooks/fetch-principles.sh" \
+  "/tmp/claude-principles-repo/.claude/hooks/fetch-principles.sh" \
   "$SCRIPT_DIR/fetch-principles.sh" \
   "$SCRIPT_DIR/../fetch-principles.sh" \
   "$SCRIPT_DIR/../../hooks/fetch-principles.sh"; do

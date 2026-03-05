@@ -322,6 +322,36 @@ with open('$SETTINGS_TARGET', 'w') as f:
   fi
 fi
 
+# Refresh installed git hooks from the principles repo clone
+# This ensures hooks stay up to date without re-running install.sh
+if [ -d "$REPO_DIR/.claude/hooks" ] && git rev-parse --is-inside-work-tree &>/dev/null; then
+  GIT_HOOKS_DIR="$(git rev-parse --git-dir)/hooks"
+  if [ -d "$GIT_HOOKS_DIR" ]; then
+    for hook_file in format-lint.sh fetch-principles.sh; do
+      src="$REPO_DIR/.claude/hooks/$hook_file"
+      dest="$GIT_HOOKS_DIR/$hook_file"
+      if [ -f "$src" ] && [ -f "$dest" ]; then
+        if ! cmp -s "$src" "$dest"; then
+          cp "$src" "$dest"
+          chmod +x "$dest"
+          log "Updated $hook_file in git hooks"
+        fi
+      fi
+    done
+    for hook_file in pre-commit post-checkout post-merge; do
+      src="$REPO_DIR/.claude/hooks/git-hooks/$hook_file"
+      dest="$GIT_HOOKS_DIR/$hook_file"
+      if [ -f "$src" ] && [ -f "$dest" ]; then
+        if ! cmp -s "$src" "$dest"; then
+          cp "$src" "$dest"
+          chmod +x "$dest"
+          log "Updated $hook_file git hook"
+        fi
+      fi
+    done
+  fi
+fi
+
 # Write cache metadata for next run
 echo "$(pwd)|${EXTRA_CATEGORIES:-}" > "$CACHE_META"
 log "Updated cache metadata"

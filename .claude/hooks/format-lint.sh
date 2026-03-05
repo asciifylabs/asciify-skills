@@ -144,6 +144,162 @@ format_js() {
   fi
 }
 
+# Format Python files
+format_python() {
+  local files=("$@")
+  [ ${#files[@]} -eq 0 ] && return 0
+
+  log "Formatting ${#files[@]} Python file(s)"
+
+  # Run ruff (linting + formatting)
+  if ensure_tool ruff "pip install ruff || pipx install ruff"; then
+    if [ "$MODE" = "fix" ]; then
+      ruff check --fix "${files[@]}" 2>/dev/null || true
+      ruff format "${files[@]}" 2>/dev/null || true
+      log "Formatted Python files with ruff"
+    else
+      if ! ruff check "${files[@]}" >/dev/null 2>&1; then
+        error "Python files have linting issues"
+      fi
+      if ! ruff format --check "${files[@]}" >/dev/null 2>&1; then
+        error "Python files need formatting"
+      fi
+    fi
+  fi
+}
+
+# Format Go files
+format_go() {
+  local files=("$@")
+  [ ${#files[@]} -eq 0 ] && return 0
+
+  log "Formatting ${#files[@]} Go file(s)"
+
+  # Run gofmt (formatting)
+  if ensure_tool gofmt "echo 'gofmt is part of the Go toolchain - install Go from https://go.dev'"; then
+    if [ "$MODE" = "fix" ]; then
+      gofmt -w "${files[@]}"
+      log "Formatted Go files with gofmt"
+    else
+      if [ -n "$(gofmt -l "${files[@]}" 2>/dev/null)" ]; then
+        error "Go files need formatting"
+      fi
+    fi
+  fi
+
+  # Run golangci-lint (linting)
+  if ensure_tool golangci-lint "go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest || brew install golangci-lint"; then
+    if [ "$MODE" = "fix" ]; then
+      golangci-lint run --fix "${files[@]}" 2>/dev/null || true
+      log "Linted Go files with golangci-lint"
+    else
+      if ! golangci-lint run "${files[@]}" >/dev/null 2>&1; then
+        error "Go files have linting issues"
+      fi
+    fi
+  fi
+}
+
+# Format Rust files
+format_rust() {
+  local files=("$@")
+  [ ${#files[@]} -eq 0 ] && return 0
+
+  log "Formatting ${#files[@]} Rust file(s)"
+
+  # Run rustfmt (formatting)
+  if ensure_tool rustfmt "rustup component add rustfmt"; then
+    if [ "$MODE" = "fix" ]; then
+      rustfmt "${files[@]}" 2>/dev/null || true
+      log "Formatted Rust files with rustfmt"
+    else
+      if ! rustfmt --check "${files[@]}" >/dev/null 2>&1; then
+        error "Rust files need formatting"
+      fi
+    fi
+  fi
+
+  # Run clippy (linting) - only if in a cargo project
+  if [ -f "Cargo.toml" ]; then
+    if ensure_tool cargo "echo 'Install Rust from https://rustup.rs'"; then
+      if [ "$MODE" = "fix" ]; then
+        cargo clippy --fix --allow-dirty --allow-staged 2>/dev/null || true
+        log "Linted Rust files with clippy"
+      else
+        if ! cargo clippy -- -D warnings >/dev/null 2>&1; then
+          error "Rust files have clippy warnings"
+        fi
+      fi
+    fi
+  fi
+}
+
+# Format Terraform files
+format_terraform() {
+  local files=("$@")
+  [ ${#files[@]} -eq 0 ] && return 0
+
+  log "Formatting ${#files[@]} Terraform file(s)"
+
+  if ensure_tool terraform "echo 'Install Terraform from https://developer.hashicorp.com/terraform/install'"; then
+    if [ "$MODE" = "fix" ]; then
+      for file in "${files[@]}"; do
+        terraform fmt "$file" 2>/dev/null || true
+      done
+      log "Formatted Terraform files"
+    else
+      for file in "${files[@]}"; do
+        if ! terraform fmt -check "$file" >/dev/null 2>&1; then
+          error "Terraform file needs formatting: $file"
+        fi
+      done
+    fi
+  fi
+
+  # Run tflint (linting)
+  if ensure_tool tflint "brew install tflint || curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash"; then
+    for file in "${files[@]}"; do
+      local dir
+      dir=$(dirname "$file")
+      if ! tflint --chdir="$dir" 2>/dev/null; then
+        error "Terraform linting issues in $file"
+      fi
+    done
+  fi
+}
+
+# Format Ansible files
+format_ansible() {
+  local files=("$@")
+  [ ${#files[@]} -eq 0 ] && return 0
+
+  log "Linting ${#files[@]} Ansible file(s)"
+
+  if ensure_tool ansible-lint "pip install ansible-lint || pipx install ansible-lint"; then
+    for file in "${files[@]}"; do
+      if ! ansible-lint "$file" 2>/dev/null; then
+        error "Ansible linting issues in $file"
+      fi
+    done
+  fi
+}
+
+# Format Kubernetes manifests (YAML with k8s content)
+format_kubernetes() {
+  local files=("$@")
+  [ ${#files[@]} -eq 0 ] && return 0
+
+  log "Linting ${#files[@]} Kubernetes manifest(s)"
+
+  if ensure_tool kubeval "brew install kubeval || go install github.com/instrumenta/kubeval@latest"; then
+    for file in "${files[@]}"; do
+      if ! kubeval "$file" 2>/dev/null; then
+        error "Kubernetes validation issues in $file"
+      fi
+    done
+  fi
+}
+
 # Format JSON files
 format_json() {
   local files=("$@")
@@ -203,6 +359,12 @@ main() {
   local js_files=()
   local json_files=()
   local yaml_files=()
+  local python_files=()
+  local go_files=()
+  local rust_files=()
+  local terraform_files=()
+  local ansible_files=()
+  local kubernetes_files=()
 
   for file in "${all_files[@]}"; do
     # Skip if file doesn't exist (e.g., deleted files)
@@ -221,7 +383,26 @@ main() {
       *.json)
         json_files+=("$file")
         ;;
+      *.py)
+        python_files+=("$file")
+        ;;
+      *.go)
+        go_files+=("$file")
+        ;;
+      *.rs)
+        rust_files+=("$file")
+        ;;
+      *.tf|*.tfvars)
+        terraform_files+=("$file")
+        ;;
       *.yml|*.yaml)
+        # Detect Ansible files (playbooks, roles, tasks)
+        if grep -qlE '^\s*-\s+(hosts|tasks|roles|ansible\.builtin)\b' "$file" 2>/dev/null; then
+          ansible_files+=("$file")
+        # Detect Kubernetes manifests
+        elif grep -qlE '^\s*apiVersion:\s' "$file" 2>/dev/null; then
+          kubernetes_files+=("$file")
+        fi
         yaml_files+=("$file")
         ;;
     esac
@@ -233,6 +414,12 @@ main() {
   [ ${#js_files[@]} -gt 0 ] && format_js "${js_files[@]}"
   [ ${#json_files[@]} -gt 0 ] && format_json "${json_files[@]}"
   [ ${#yaml_files[@]} -gt 0 ] && format_yaml "${yaml_files[@]}"
+  [ ${#python_files[@]} -gt 0 ] && format_python "${python_files[@]}"
+  [ ${#go_files[@]} -gt 0 ] && format_go "${go_files[@]}"
+  [ ${#rust_files[@]} -gt 0 ] && format_rust "${rust_files[@]}"
+  [ ${#terraform_files[@]} -gt 0 ] && format_terraform "${terraform_files[@]}"
+  [ ${#ansible_files[@]} -gt 0 ] && format_ansible "${ansible_files[@]}"
+  [ ${#kubernetes_files[@]} -gt 0 ] && format_kubernetes "${kubernetes_files[@]}"
 
   # Re-stage formatted files if in fix mode and in git repo
   if [ "$MODE" = "fix" ] && git rev-parse --is-inside-work-tree &>/dev/null; then

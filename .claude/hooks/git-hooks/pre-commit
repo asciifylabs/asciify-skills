@@ -3,11 +3,18 @@
 # This hook runs automatically before git commit
 
 # Find the format-lint.sh script
+# Prefer the source copy (principles repo or .claude/hooks) over the installed copy in .git/hooks
 SCRIPT_DIR="$(dirname "$0")"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 FORMAT_SCRIPT=""
 
-# Try multiple locations
+# Try multiple locations, preferring the freshest source
+# 1. Repo's own tracked copy (always up to date with the repo)
+# 2. Principles repo clone (updated on fetch)
+# 3. Installed copy in .git/hooks (may be stale)
 for path in \
+  "$REPO_ROOT/.claude/hooks/format-lint.sh" \
+  "/tmp/claude-principles-repo/.claude/hooks/format-lint.sh" \
   "$SCRIPT_DIR/format-lint.sh" \
   "$SCRIPT_DIR/../format-lint.sh" \
   "$SCRIPT_DIR/../../hooks/format-lint.sh"; do

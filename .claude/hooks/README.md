@@ -1,134 +1,69 @@
-# Claude Code Session Hook Setup
+# Claude Code Hook Setup
 
-This guide explains how to configure Claude Code to automatically load coding principles at the start of every session.
+This guide explains how coding principles and linting hooks are loaded and kept up to date.
 
-## Quick Setup
+## How It Works
 
-1. **Locate your Claude Code settings file:**
+Add a `CLAUDE.md` or `AGENTS.md` to your repo root with the initialization script from this repository. The script:
 
-   ```bash
-   ~/.claude/settings.json
-   ```
+1. Clones the principles repo to `/tmp/claude-principles-repo` (first run only)
+2. Installs git hooks if not already present (`install.sh --non-interactive`)
+3. On subsequent runs, fetches updated principles and refreshes installed hooks
 
-2. **Add the session start hook configuration:**
+### Auto-Update Flow
 
-   If the file doesn't exist, create it with this content:
+```
+Session start (CLAUDE.md / AGENTS.md init script)
+  -> fetch-principles.sh
+    -> git pull on /tmp/claude-principles-repo
+    -> Regenerate /tmp/claude-principles-active.md
+    -> Sync hooks from repo clone into .git/hooks/
 
-   ```json
-   {
-     "sessionStartHooks": [
-       {
-         "name": "Load Coding Principles",
-         "command": "bash",
-         "args": [
-           "-c",
-           "bash ~/.local/share/claude-principles/fetch-principles.sh && cat /tmp/claude-principles-active.md"
-         ],
-         "timeout": 30000
-       }
-     ]
-   }
-   ```
+git checkout / git switch (post-checkout hook)
+  -> fetch-principles.sh (in background)
 
-   If the file already exists, add the `sessionStartHooks` array to your existing configuration.
+git merge / git pull (post-merge hook)
+  -> fetch-principles.sh (in background)
 
-3. **Adjust the path:**
-
-   Update the path in the `args` to point to where you installed `fetch-principles.sh`. Common locations:
-   - `~/.local/share/claude-principles/fetch-principles.sh`
-   - `/path/to/your/project/.git/hooks/fetch-principles.sh`
-   - Or use the full absolute path
-
-## Alternative: Manual Path
-
-If you prefer to use a specific path, you can use:
-
-```json
-{
-  "sessionStartHooks": [
-    {
-      "name": "Load Coding Principles",
-      "command": "bash",
-      "args": ["-c", "cat /tmp/claude-principles-active.md"],
-      "timeout": 10000
-    }
-  ]
-}
+git commit (pre-commit hook)
+  -> format-lint.sh (lint + auto-fix staged files)
 ```
 
-This assumes you've already run the git hooks to populate `/tmp/claude-principles-active.md`.
+All hooks prefer the **source copy** (repo's own `.claude/hooks/` or the principles repo clone) over the installed copy in `.git/hooks/`. This means updates to the principles repo propagate automatically without re-running `install.sh`.
 
-## Verification
+## Supported Languages
 
-1. Start a new Claude Code session
-2. Check if the principles are loaded by asking Claude about them
-3. Verify the file exists: `cat /tmp/claude-principles-active.md`
+The pre-commit hook auto-detects file types and runs appropriate tools:
 
-If the file is empty or missing, run the fetch script manually:
+| Language       | Formatter        | Linter            |
+|----------------|------------------|-------------------|
+| Shell          | `shfmt`          | `shellcheck`      |
+| JavaScript/TSX | `prettier`       | `eslint`          |
+| Python         | `ruff format`    | `ruff check`      |
+| Go             | `gofmt`          | `golangci-lint`   |
+| Rust           | `rustfmt`        | `clippy`          |
+| Terraform      | `terraform fmt`  | `tflint`          |
+| Ansible        | --               | `ansible-lint`    |
+| Kubernetes     | --               | `kubeval`         |
+| Markdown       | `prettier`       | --                |
+| JSON           | `prettier`       | --                |
+| YAML           | `prettier`       | --                |
 
-```bash
-bash ~/.local/share/claude-principles/fetch-principles.sh
-```
+Tools are only invoked if installed. Missing tools are skipped with an install hint.
 
-## Troubleshooting
+## Configuration
 
-### Hook doesn't run
+Environment variables for `fetch-principles.sh`:
 
-- Check the path to `fetch-principles.sh` is correct
-- Ensure the script is executable: `chmod +x fetch-principles.sh`
-- Check Claude Code logs for errors
+- `VERBOSE=true` -- Enable verbose logging
+- `EXTRA_CATEGORIES="ansible kubernetes"` -- Add additional categories
+- `PRINCIPLES_REPO_DIR=/custom/path` -- Custom cache directory
+- `PRINCIPLES_OUTPUT=/custom/output.md` -- Custom output file
+- `SKIP_SETTINGS=true` -- Disable automatic Claude Code settings merge
+- `FORCE_REFRESH=true` -- Skip cache and force re-fetch
 
-### Principles not loading
+Environment variables for `format-lint.sh`:
 
-- Verify the output file exists: `ls -la /tmp/claude-principles-active.md`
-- Check file permissions
-- Run the script manually with verbose mode: `VERBOSE=true bash fetch-principles.sh`
-
-### Timeout errors
-
-- Increase the timeout value (default: 30000ms = 30 seconds)
-- Check network connectivity to GitHub
-- Consider using the cached version by running the script once manually
-
-## Additional Configuration
-
-You can customize the behavior with environment variables:
-
-```json
-{
-  "sessionStartHooks": [
-    {
-      "name": "Load Coding Principles",
-      "command": "bash",
-      "args": [
-        "-c",
-        "VERBOSE=true EXTRA_CATEGORIES='ansible' bash ~/.local/share/claude-principles/fetch-principles.sh && cat /tmp/claude-principles-active.md"
-      ],
-      "timeout": 30000
-    }
-  ]
-}
-```
-
-Available environment variables:
-
-- `VERBOSE=true` - Enable verbose logging
-- `EXTRA_CATEGORIES="category1 category2"` - Add additional categories
-- `PRINCIPLES_REPO_DIR=/custom/path` - Use custom cache directory
-- `PRINCIPLES_OUTPUT=/custom/output.md` - Use custom output file
-- `SKIP_SETTINGS=true` - Disable automatic merge of Claude Code permissions
-
-## Automatic Settings Sync
-
-The `fetch-principles.sh` script automatically merges Claude Code permissions from the principles repo's `claude-settings.json` into your `~/.claude/settings.json`. This includes pre-approved safe commands (read-only git operations, basic shell utilities, etc.) so Claude Code won't prompt for confirmation on those commands.
-
-The merge is additive -- it adds permissions from the repo without removing any existing permissions or other settings you've configured. It requires either `jq` or `python3` to be available.
-
-To disable this behavior, set `SKIP_SETTINGS=true` when running the script.
-
-## More Information
-
-For more details, see the main repository:
-
-- GitHub: https://github.com/asciifylabs/agentic-principles
-- Troubleshooting: https://github.com/asciifylabs/agentic-principles/blob/main/docs/TROUBLESHOOTING.md
+- `FORMAT_LINT_MODE=fix|check` -- Auto-fix (default) or check-only
+- `FORMAT_LINT_AUTO_INSTALL=true` -- Auto-install missing tools
+- `VERBOSE=true` -- Enable verbose logging
