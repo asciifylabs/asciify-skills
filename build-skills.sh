@@ -204,12 +204,18 @@ for category_dir in "${SCRIPT_DIR}"/*/; do
   fi
 
   output_file="${SKILLS_DIR}/${category}-principles.md"
-  capitalized="${category^}"
+
+  # Display names for categories that need special casing
+  declare -A DISPLAY_NAMES=(
+    [ai]="AI"
+    [nodejs]="Node.js"
+  )
+  capitalized="${DISPLAY_NAMES[${category}]:-${category^}}"
 
   {
     # YAML frontmatter
     echo "---"
-    echo "name: ${capitalized} Principles"
+    echo "name: ${category}-principles"
     echo "description: \"${TRIGGERS[${category}]}\""
     echo "---"
     echo ""
