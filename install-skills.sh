@@ -90,12 +90,24 @@ resolve_install_dir() {
   esac
 }
 
-# Download a file from the repo
+# Detect if running from a local copy of the repo
+SCRIPT_DIR=""
+if [[ -n "${BASH_SOURCE[0]:-}" ]] && [[ -f "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/skills/security-principles.md" ]]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+
+# Download a file from the repo (or copy from local source)
 download_file() {
   local path="$1"
   local dest="$2"
-  local url="${RAW_BASE}/${path}"
 
+  # Prefer local copy if running from the repo
+  if [[ -n "${SCRIPT_DIR}" ]] && [[ -f "${SCRIPT_DIR}/${path}" ]]; then
+    cp "${SCRIPT_DIR}/${path}" "${dest}"
+    return 0
+  fi
+
+  local url="${RAW_BASE}/${path}"
   if ! curl -sSfL "${url}" -o "${dest}" 2>/dev/null; then
     error "Failed to download ${url}"
   fi
@@ -124,13 +136,14 @@ register_hook() {
   fi
 
   # Merge hook into settings using jq if available, otherwise Python
+  # Claude Code hook format: {"hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "..."}]}]}}
   if command -v jq &>/dev/null; then
     local tmp
     tmp=$(mktemp)
     jq --arg cmd "${hook_cmd}" '
       .hooks //= {} |
       .hooks.SessionStart //= [] |
-      .hooks.SessionStart += [{"type": "command", "command": $cmd}]
+      .hooks.SessionStart += [{"hooks": [{"type": "command", "command": $cmd}]}]
     ' "${SETTINGS_FILE}" > "${tmp}" && mv "${tmp}" "${SETTINGS_FILE}"
   elif command -v python3 &>/dev/null; then
     python3 -c "
@@ -138,15 +151,14 @@ import json
 with open('${SETTINGS_FILE}', 'r') as f:
     settings = json.load(f)
 settings.setdefault('hooks', {}).setdefault('SessionStart', []).append({
-    'type': 'command',
-    'command': '${hook_cmd}'
+    'hooks': [{'type': 'command', 'command': '${hook_cmd}'}]
 })
 with open('${SETTINGS_FILE}', 'w') as f:
     json.dump(settings, f, indent=2)
 "
   else
     warning "Neither jq nor python3 found. Add this manually to ${SETTINGS_FILE}:"
-    echo "  hooks.SessionStart: [{\"type\": \"command\", \"command\": \"${hook_cmd}\"}]"
+    echo '  hooks.SessionStart: [{"hooks": [{"type": "command", "command": "'"${hook_cmd}"'"}]}]'
   fi
 }
 
@@ -156,12 +168,15 @@ unregister_hook() {
     return
   fi
 
+  # Claude Code hook format: each entry is {"hooks": [{"type": "command", "command": "..."}]}
   if command -v jq &>/dev/null; then
     local tmp
     tmp=$(mktemp)
     jq '
       if .hooks?.SessionStart then
-        .hooks.SessionStart |= map(select(.command | contains("agentic-principles") | not))
+        .hooks.SessionStart |= map(select(
+          (.hooks // []) | map(.command // "") | join("") | contains("agentic-principles") | not
+        ))
       else . end
     ' "${SETTINGS_FILE}" > "${tmp}" && mv "${tmp}" "${SETTINGS_FILE}"
   elif command -v python3 &>/dev/null; then
@@ -170,7 +185,10 @@ import json
 with open('${SETTINGS_FILE}', 'r') as f:
     settings = json.load(f)
 hooks = settings.get('hooks', {}).get('SessionStart', [])
-settings['hooks']['SessionStart'] = [h for h in hooks if 'agentic-principles' not in h.get('command', '')]
+settings['hooks']['SessionStart'] = [
+    h for h in hooks
+    if not any('agentic-principles' in cmd.get('command', '') for cmd in h.get('hooks', []))
+]
 with open('${SETTINGS_FILE}', 'w') as f:
     json.dump(settings, f, indent=2)
 "
