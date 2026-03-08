@@ -2,187 +2,120 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Curated coding principles that AI agents and developers actually follow.** Auto-detected, auto-loaded, and enforced through git hooks — so every commit meets the standard.
+**Curated coding principles that AI agents and developers actually follow.** Distributed as Claude Code skills that activate automatically based on the files you are working with.
 
-Agentic Principles ships 160+ actionable rules across 10 technology categories. Drop it into any repo and it automatically detects your stack, loads the relevant principles, and sets up pre-commit formatting and linting — zero config required.
+Agentic Principles ships 160+ actionable rules across 10 technology categories. Install the skills into any Claude Code project and they load on demand -- no configuration, no hooks, no bootstrap scripts.
 
 ## Why?
 
 AI coding agents are powerful, but they need guardrails. Style guides rot in wikis. Linter configs drift across repos. Agentic Principles solves this by:
 
-- **Auto-detecting** your tech stack (Python, Go, Rust, Node.js, Terraform, K8s, Ansible, Shell, AI/ML)
-- **Always loading** security principles — because every project needs them
-- **Enforcing** formatting and linting on every commit via git hooks
-- **Staying current** — hooks pull the latest principles automatically
-- **Agent-agnostic** — works with Claude Code, Cursor, Windsurf, Copilot, and any agent that reads instruction files
+- **Context-triggered** -- skills activate automatically when you touch relevant file types
+- **Always loading** security principles -- because every project needs them
+- **Including linting guidance** -- each skill tells the agent which formatters and linters to run
+- **Staying current** -- update skills by pulling the latest from the repo
+- **Zero config** -- no hooks, no install scripts, no settings merge
 
 ## Quick Start
 
-Copy one file into your repo. That's it.
-
-**For [Claude Code](https://docs.anthropic.com/en/docs/claude-code)** — copy [`CLAUDE.md`](CLAUDE.md):
+Install the skill files into your Claude Code project:
 
 ```bash
-curl -sO https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/CLAUDE.md
+# Clone the repo
+git clone https://github.com/asciifylabs/agentic-principles.git /tmp/agentic-principles
+
+# Copy skills into your project
+mkdir -p .claude/skills
+cp /tmp/agentic-principles/skills/*.md .claude/skills/
 ```
 
-**For all other AI agents** (Cursor, Windsurf, Copilot, etc.) — copy [`AGENTS.md`](AGENTS.md):
+Or fetch individual skills directly:
 
 ```bash
-curl -sO https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/AGENTS.md
+mkdir -p .claude/skills
+
+# Example: install only the skills you need
+curl -sO --output-dir .claude/skills \
+  https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/skills/security-principles.md
+
+curl -sO --output-dir .claude/skills \
+  https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/skills/python-principles.md
 ```
 
-When your agent starts a session, it reads the file and runs the bootstrap script inside it. The script will:
-
-1. Clone this repo locally (cached for speed)
-2. Auto-detect technologies in your project
-3. Load the relevant principles into `/tmp/claude-principles-active.md`
-4. Install git hooks for formatting and linting
-
-> **Both files contain the same instructions.** `CLAUDE.md` is what Claude Code reads automatically. `AGENTS.md` follows the emerging convention for other AI coding tools. Use whichever matches your agent — or both if your team uses multiple tools.
-
-### Alternative: Install hooks directly
-
-If you just want the git hooks (formatting, linting, auto-update) without an AI agent:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/install.sh | bash
-```
+That's it. Claude Code reads skill files from `.claude/skills/` and activates them based on context.
 
 ## Table of Contents
 
-- [Installation Options](#installation-options)
-- [How It Works](#how-it-works)
+- [Available Skills](#available-skills)
 - [Supported Technologies](#supported-technologies)
 - [Principles Reference](#principles-reference)
-- [Agent Setup](#agent-setup)
-- [Customizing Formatters](#customizing-formatters)
-- [Troubleshooting](#troubleshooting)
-- [Uninstalling](#uninstalling)
+- [Building Skills](#building-skills)
 - [Contributing](#contributing)
 - [License](#license)
 
-## Installation Options
+## Available Skills
 
-### Full Installation (Recommended)
+Each skill is a self-contained Markdown file with YAML frontmatter that tells Claude Code when to activate it:
 
-Principles + formatting + linting:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/install.sh | bash
-```
-
-### Principles Only
-
-Skip auto-formatting hooks:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/install.sh | bash -s -- --principles-only
-```
-
-### Formatting Only
-
-Skip principle loading:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/install.sh | bash -s -- --formatting-only
-```
-
-### Auto-Install Tools
-
-Automatically install missing formatters/linters:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/install.sh | bash -s -- --auto-install-tools
-```
-
-## How It Works
-
-### Principle Detection
-
-On `git checkout` and `git pull`, hooks scan your repo and load principles for detected technologies:
-
-| Technology     | Detection                                                                                          |
-| -------------- | -------------------------------------------------------------------------------------------------- |
-| **Security**   | Always loaded                                                                                      |
-| **Shell**      | `*.sh` files                                                                                       |
-| **Terraform**  | `*.tf` files                                                                                       |
-| **Ansible**    | `ansible.cfg`, `playbooks/`, `roles/`                                                              |
-| **Kubernetes** | `Chart.yaml`, `kustomization.yaml`, K8s manifests                                                  |
-| **Node.js**    | `package.json`, `*.js`, `*.ts`, `*.tsx`                                                            |
-| **Python**     | `*.py`, `requirements.txt`, `pyproject.toml`, `setup.py`                                           |
-| **Go**         | `go.mod`, `go.sum`, `*.go`                                                                         |
-| **Rust**       | `Cargo.toml`, `Cargo.lock`, `*.rs`                                                                 |
-| **AI**         | AI/ML dependencies in `pyproject.toml`, `requirements.txt`, `package.json`, `Cargo.toml`, `go.mod` |
-
-Principles are cached in `/tmp/claude-principles-active.md` for instant access.
-
-### Pre-Commit Formatting
-
-Staged files are automatically formatted and linted before each commit:
-
-| File Type                       | Tools              |
-| ------------------------------- | ------------------ |
-| Shell (`*.sh`)                  | shellcheck + shfmt |
-| Markdown (`*.md`)               | prettier           |
-| JS/TS (`*.js`, `*.ts`, `*.tsx`) | prettier + eslint  |
-| JSON (`*.json`)                 | prettier           |
-| YAML (`*.yml`, `*.yaml`)        | prettier           |
-
-Formatting auto-fixes what it can and blocks the commit only for unfixable issues. Skip with `git commit --no-verify` when needed.
-
-### Performance
-
-- Hooks run in the background (non-blocking)
-- Shallow git clone for speed
-- Local caching with lockfile to prevent concurrent runs
+| Skill File | Activates When |
+| --- | --- |
+| `security-principles.md` | Writing, reviewing, or modifying any code in any language |
+| `shell-principles.md` | Working with `.sh`, `.bash`, Makefile, or Dockerfile |
+| `go-principles.md` | Working with `.go`, `go.mod`, `go.sum` |
+| `python-principles.md` | Working with `.py`, `pyproject.toml`, `requirements.txt` |
+| `nodejs-principles.md` | Working with `.js`, `.ts`, `.tsx`, `package.json` |
+| `rust-principles.md` | Working with `.rs`, `Cargo.toml` |
+| `terraform-principles.md` | Working with `.tf`, `.tfvars` |
+| `ansible-principles.md` | Working with playbooks, roles, `ansible.cfg` |
+| `kubernetes-principles.md` | Working with Kubernetes manifests or Helm charts |
+| `ai-principles.md` | Working with AI/ML frameworks (OpenAI, Anthropic, LangChain, PyTorch, TensorFlow) |
 
 ## Supported Technologies
 
-### Security — 18 principles (always loaded)
+### Security -- 18 principles (always loaded)
 
 Language-agnostic security and code quality standards covering OWASP top 10, secrets management, input validation, authentication, authorization, XSS/CSRF prevention, secure defaults, and more.
 
-### Shell — 12 principles
+### Shell -- 12 principles
 
 `set -euo pipefail`, quoting, error handling, temporary files, structured logging, arrays, and functions.
 
-### Terraform — 13 principles
+### Terraform -- 13 principles
 
 Modules, remote state, workspaces, lifecycle rules, provider constraints, dependency graphs, and tagging.
 
-### Ansible — 12 principles
+### Ansible -- 12 principles
 
 Roles, idempotency, handlers, templates, tags, facts, vault, inventories, and conditionals.
 
-### Kubernetes — 18 principles
+### Kubernetes -- 18 principles
 
 Namespaces, resource limits, probes, RBAC, network policies, pod security, priority classes, plus Cilium-specific networking (routing, Hubble, eBPF, bandwidth manager).
 
-### Node.js — 15 principles
+### Node.js -- 15 principles
 
 Async/await, error handling, ESM modules, dependency locking, structured logging, TypeScript, graceful shutdown, and project structure.
 
-### Python — 25 principles
+### Python -- 25 principles
 
 Type hints, context managers, PEP 8, virtual environments, dataclasses, pytest, async I/O, plus AI development principles (API keys, rate limits, streaming, prompt engineering, vector DBs, caching).
 
-### Go — 20 principles
+### Go -- 20 principles
 
 Error handling, interfaces, context, channels, goroutine leaks, defer, struct embedding, project layout, build tags, and benchmarks.
 
-### AI — 28 principles
+### AI -- 28 principles
 
 Prompt engineering, output validation, RAG pipelines, chunking strategies, LLM observability, failure handling, context window management, guardrails, evaluation, token optimization, caching, streaming, function calling, agent loops, model selection, embeddings, hybrid search, model versioning, bias detection, human-in-the-loop, API security, testing, training data quality, multi-agent systems, few-shot examples, prompt injection prevention, and multimodal input handling.
 
-### Rust — 20 principles
+### Rust -- 20 principles
 
 Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointers, async/await, error types, lifetimes, and zero-cost abstractions.
 
 ## Principles Reference
 
 <details>
-<summary><strong>Security</strong> — 18 principles</summary>
+<summary><strong>Security</strong> -- 18 principles</summary>
 
 | #   | Principle                                                                                              |
 | --- | ------------------------------------------------------------------------------------------------------ |
@@ -208,7 +141,7 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 </details>
 
 <details>
-<summary><strong>Shell</strong> — 12 principles</summary>
+<summary><strong>Shell</strong> -- 12 principles</summary>
 
 | #   | Principle                                                                    |
 | --- | ---------------------------------------------------------------------------- |
@@ -228,7 +161,7 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 </details>
 
 <details>
-<summary><strong>Terraform</strong> — 13 principles</summary>
+<summary><strong>Terraform</strong> -- 13 principles</summary>
 
 | #   | Principle                                                                                         |
 | --- | ------------------------------------------------------------------------------------------------- |
@@ -249,7 +182,7 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 </details>
 
 <details>
-<summary><strong>Ansible</strong> — 12 principles</summary>
+<summary><strong>Ansible</strong> -- 12 principles</summary>
 
 | #   | Principle                                                                           |
 | --- | ----------------------------------------------------------------------------------- |
@@ -269,7 +202,7 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 </details>
 
 <details>
-<summary><strong>Kubernetes</strong> — 18 principles</summary>
+<summary><strong>Kubernetes</strong> -- 18 principles</summary>
 
 **General**
 
@@ -302,7 +235,7 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 </details>
 
 <details>
-<summary><strong>Node.js</strong> — 15 principles</summary>
+<summary><strong>Node.js</strong> -- 15 principles</summary>
 
 | #   | Principle                                                                                  |
 | --- | ------------------------------------------------------------------------------------------ |
@@ -325,7 +258,7 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 </details>
 
 <details>
-<summary><strong>Python</strong> — 25 principles</summary>
+<summary><strong>Python</strong> -- 25 principles</summary>
 
 **General Best Practices**
 
@@ -365,7 +298,7 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 </details>
 
 <details>
-<summary><strong>AI</strong> — 28 principles</summary>
+<summary><strong>AI</strong> -- 28 principles</summary>
 
 **Prompt Engineering & LLM Integration**
 
@@ -423,7 +356,7 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 </details>
 
 <details>
-<summary><strong>Go</strong> — 20 principles</summary>
+<summary><strong>Go</strong> -- 20 principles</summary>
 
 | #   | Principle                                                                    |
 | --- | ---------------------------------------------------------------------------- |
@@ -451,7 +384,7 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 </details>
 
 <details>
-<summary><strong>Rust</strong> — 20 principles</summary>
+<summary><strong>Rust</strong> -- 20 principles</summary>
 
 | #   | Principle                                                                        |
 | --- | -------------------------------------------------------------------------------- |
@@ -478,115 +411,25 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 
 </details>
 
-## Agent Setup
+## Building Skills
 
-### Claude Code
+If you modify the principle source files (the per-category Markdown files in directories like `security/`, `python/`, `go/`, etc.), you need to regenerate the skill files before committing.
 
-Claude Code automatically reads `CLAUDE.md` from your project root. Just copy the file:
-
-```bash
-curl -sO https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/CLAUDE.md
-```
-
-For automatic loading via session hooks, add this to `~/.claude/settings.json`:
-
-```json
-{
-  "sessionStartHooks": [
-    {
-      "name": "Load Coding Principles",
-      "command": "bash",
-      "args": [
-        "-c",
-        "bash /path/to/fetch-principles.sh && cat /tmp/claude-principles-active.md"
-      ],
-      "timeout": 30000
-    }
-  ]
-}
-```
-
-See [.claude/hooks/README.md](.claude/hooks/README.md) for detailed setup instructions.
-
-### Other AI Agents (Cursor, Windsurf, Copilot, etc.)
-
-Copy `AGENTS.md` into your project root:
+Run the build script:
 
 ```bash
-curl -sO https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/AGENTS.md
+./build-skills.sh
 ```
 
-Point your agent's instruction file config at `AGENTS.md`, or paste its contents into your agent's system prompt. The bootstrap script inside works with any agent that can execute shell commands.
+This script:
 
-## Customizing Formatters
+1. Scans each category directory for principle Markdown files
+2. Concatenates them into a single skill file per category
+3. Adds YAML frontmatter with the skill name and trigger description
+4. Appends linting/formatting guidance specific to each technology
+5. Writes the output to `skills/<category>-principles.md`
 
-The pre-commit hook respects standard configuration files in your project root:
-
-**`.prettierrc`** (JS, TS, JSON, YAML, Markdown):
-
-```json
-{
-  "printWidth": 100,
-  "tabWidth": 2,
-  "semi": true,
-  "singleQuote": false,
-  "trailingComma": "es5"
-}
-```
-
-**`.eslintrc.json`** (JS, TS linting):
-
-```json
-{
-  "extends": ["eslint:recommended"],
-  "rules": {
-    "indent": ["error", 2],
-    "quotes": ["error", "single"]
-  }
-}
-```
-
-**`.editorconfig`** (all files):
-
-```ini
-root = true
-
-[*]
-indent_style = space
-indent_size = 2
-end_of_line = lf
-```
-
-### Required Tools
-
-```bash
-npm install -g prettier eslint    # JS/TS/JSON/YAML/Markdown
-npm install -g shellcheck shfmt   # Shell scripts
-
-# Or via Homebrew:
-brew install prettier eslint shellcheck shfmt
-```
-
-## Troubleshooting
-
-See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for the full guide.
-
-**Common fixes:**
-
-| Problem            | Solution                                           |
-| ------------------ | -------------------------------------------------- |
-| Hooks not running  | `chmod +x .git/hooks/*`                            |
-| Stale principles   | `rm -rf /tmp/claude-principles-repo`               |
-| Missing formatters | `npm install -g prettier eslint shellcheck shfmt`  |
-| Debug output       | `VERBOSE=true bash .git/hooks/fetch-principles.sh` |
-
-## Uninstalling
-
-```bash
-curl -sSL https://raw.githubusercontent.com/asciifylabs/agentic-principles/main/install.sh | bash -s -- --uninstall
-```
-
-This removes all hooks and restores any originals from backup.
+Always run `build-skills.sh` after editing principles and commit the updated skill files alongside your source changes.
 
 ## Contributing
 
