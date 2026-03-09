@@ -19,6 +19,7 @@ declare -A TRIGGERS=(
   [ansible]="Use when writing, reviewing, or modifying Ansible code (playbooks, roles, ansible.cfg)"
   [kubernetes]="Use when writing, reviewing, or modifying Kubernetes manifests or Helm charts"
   [ai]="Use when writing, reviewing, or modifying AI/ML code using frameworks like OpenAI, Anthropic, LangChain, PyTorch, TensorFlow"
+  [git]="Use when creating git commits, writing commit messages, or performing any git operations"
 )
 
 # Generate linting section for a given category
