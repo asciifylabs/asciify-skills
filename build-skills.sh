@@ -20,6 +20,7 @@ declare -A TRIGGERS=(
   [kubernetes]="Use when writing, reviewing, or modifying Kubernetes manifests or Helm charts"
   [ai]="Use when writing, reviewing, or modifying AI/ML code using frameworks like OpenAI, Anthropic, LangChain, PyTorch, TensorFlow"
   [git]="Use when creating git commits, writing commit messages, or performing any git operations"
+  [docker]="Use when writing, reviewing, or modifying Dockerfiles, docker-compose files, or container configurations"
 )
 
 # Generate linting section for a given category
@@ -147,6 +148,23 @@ Before considering code complete, run the following tools on all changed files. 
 Auto-fix what can be auto-fixed. Report unfixable issues to the user.
 LINT
       ;;
+    docker)
+      cat <<'LINT'
+
+---
+
+# Linting and Formatting
+
+Before considering code complete, run the following tools on all changed files. If a tool is not installed, skip it and suggest the install command to the user.
+
+- **hadolint** — Dockerfile linter following best practices: `hadolint Dockerfile`
+  Install: `brew install hadolint` or `docker run --rm -i hadolint/hadolint < Dockerfile`
+- **docker scout** — scan images for vulnerabilities: `docker scout cves myimage:tag`
+- **trivy** — scan images and config files: `trivy config Dockerfile`
+
+Auto-fix what can be auto-fixed. Report unfixable issues to the user.
+LINT
+      ;;
     ai|git|security)
       # No linting section for these categories
       ;;
@@ -209,6 +227,7 @@ for category_dir in "${SCRIPT_DIR}"/*/; do
   # Display names for categories that need special casing
   declare -A DISPLAY_NAMES=(
     [ai]="AI"
+    [docker]="Docker"
     [nodejs]="Node.js"
   )
   capitalized="${DISPLAY_NAMES[${category}]:-${category^}}"

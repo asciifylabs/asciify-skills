@@ -7,6 +7,7 @@ These skills provide coding principles, linting, and security scanning for Claud
 | Skill | Triggers On |
 |-------|------------|
 | `security-principles` | All code (always active) |
+| `docker-principles` | Dockerfile, docker-compose files, container configs |
 | `shell-principles` | .sh, .bash, Makefile, Dockerfile |
 | `go-principles` | .go, go.mod, go.sum |
 | `python-principles` | .py, pyproject.toml, requirements.txt |

@@ -4,7 +4,7 @@
 
 **Curated coding principles that AI agents and developers actually follow.** Distributed as Claude Code skills that activate automatically based on the files you are working with.
 
-Agentic Principles ships 160+ actionable rules across 11 technology categories. Install the skills into any Claude Code project and they load on demand -- no configuration, no hooks, no bootstrap scripts.
+Agentic Principles ships 175+ actionable rules across 12 technology categories. Install the skills into any Claude Code project and they load on demand -- no configuration, no hooks, no bootstrap scripts.
 
 ## Why?
 
@@ -91,6 +91,7 @@ Each skill is a self-contained Markdown file with YAML frontmatter that tells Cl
 | Skill File | Activates When |
 | --- | --- |
 | `security-principles.md` | Writing, reviewing, or modifying any code in any language |
+| `docker-principles.md` | Working with Dockerfiles, docker-compose files, or container configurations |
 | `shell-principles.md` | Working with `.sh`, `.bash`, Makefile, or Dockerfile |
 | `go-principles.md` | Working with `.go`, `go.mod`, `go.sum` |
 | `python-principles.md` | Working with `.py`, `pyproject.toml`, `requirements.txt` |
@@ -111,6 +112,10 @@ Commit hygiene, conventional commits, atomic changes, branch workflow, secret pr
 ### Security -- 18 principles (always loaded)
 
 Language-agnostic security and code quality standards covering OWASP top 10, secrets management, input validation, authentication, authorization, XSS/CSRF prevention, secure defaults, and more.
+
+### Docker -- 15 principles
+
+Multi-stage builds, non-root users, image pinning, `.dockerignore`, layer optimization, health checks, secrets management, read-only filesystems, vulnerability scanning, capability dropping, minimal base images, exec form entrypoints, seccomp/AppArmor, and BuildKit features.
 
 ### Shell -- 12 principles
 
@@ -188,6 +193,29 @@ Ownership, Result/Option, traits, cargo, clippy, pattern matching, smart pointer
 | 016 | [Use Static Analysis and Linting](security/016-use-static-analysis-and-linting.md)                     |
 | 017 | [Write Security-Focused Tests](security/017-write-security-focused-tests.md)                           |
 | 018 | [Follow Secure Code Review Practices](security/018-follow-secure-code-review-practices.md)             |
+
+</details>
+
+<details>
+<summary><strong>Docker</strong> -- 15 principles</summary>
+
+| #   | Principle                                                                                      |
+| --- | ---------------------------------------------------------------------------------------------- |
+| 001 | [Use Specific Image Tags](docker/001-use-specific-image-tags.md)                               |
+| 002 | [Use Multi-Stage Builds](docker/002-use-multi-stage-builds.md)                                 |
+| 003 | [Run as Non-Root User](docker/003-run-as-non-root.md)                                          |
+| 004 | [Use .dockerignore](docker/004-use-dockerignore.md)                                            |
+| 005 | [Minimize Layers and Image Size](docker/005-minimize-layers.md)                                |
+| 006 | [Use COPY Instead of ADD](docker/006-use-copy-not-add.md)                                      |
+| 007 | [Set Health Checks](docker/007-set-health-checks.md)                                           |
+| 008 | [Never Store Secrets in Images](docker/008-never-store-secrets-in-images.md)                    |
+| 009 | [Use Read-Only Filesystem](docker/009-use-read-only-filesystem.md)                              |
+| 010 | [Scan Images for Vulnerabilities](docker/010-scan-images-for-vulnerabilities.md)                |
+| 011 | [Drop All Capabilities](docker/011-drop-capabilities.md)                                       |
+| 012 | [Use Minimal Base Images](docker/012-use-minimal-base-images.md)                                |
+| 013 | [Use Exec Form for CMD and ENTRYPOINT](docker/013-use-exec-form-for-entrypoint.md)              |
+| 014 | [Set Security Options](docker/014-set-security-options.md)                                      |
+| 015 | [Use BuildKit Features](docker/015-use-buildkit-features.md)                                    |
 
 </details>
 

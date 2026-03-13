@@ -16,6 +16,7 @@ HOOK_SCRIPT="${SCRIPTS_DIR}/agentic-principles-update-check.sh"
 SKILL_FILES=(
   ai-principles.md
   ansible-principles.md
+  docker-principles.md
   git-principles.md
   go-principles.md
   kubernetes-principles.md
