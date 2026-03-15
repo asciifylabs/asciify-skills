@@ -23,10 +23,14 @@ SKILL_FILES=(
   security-principles.md
   shell-principles.md
   terraform-principles.md
+  .version
+)
+
+# Command files — installed to commands/ directory for slash command registration
+COMMAND_FILES=(
   asciify-skills-update.md
   asciify-skills-uninstall.md
   asciify-skills-help.md
-  .version
 )
 
 # Colors
@@ -44,6 +48,7 @@ error()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 # Parse arguments
 MODE=""
 INSTALL_DIR=""
+COMMANDS_DIR=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -59,12 +64,14 @@ resolve_install_dir() {
   case "${MODE}" in
     global)
       INSTALL_DIR="${HOME}/.claude/skills/asciify-skills"
+      COMMANDS_DIR="${HOME}/.claude/commands/asciify-skills"
       ;;
     local)
       if [[ ! -d ".git" ]] && ! git rev-parse --is-inside-work-tree &>/dev/null; then
         error "Not inside a git repository. --local must be run from a project root."
       fi
       INSTALL_DIR=".claude/skills/asciify-skills"
+      COMMANDS_DIR=".claude/commands/asciify-skills"
       ;;
     "")
       echo ""
@@ -76,8 +83,8 @@ resolve_install_dir() {
       echo ""
       read -p "Select [1/2]: " -r choice
       case "${choice}" in
-        1) MODE="global"; INSTALL_DIR="${HOME}/.claude/skills/asciify-skills" ;;
-        2) MODE="local"; INSTALL_DIR=".claude/skills/asciify-skills" ;;
+        1) MODE="global"; INSTALL_DIR="${HOME}/.claude/skills/asciify-skills"; COMMANDS_DIR="${HOME}/.claude/commands/asciify-skills" ;;
+        2) MODE="local"; INSTALL_DIR=".claude/skills/asciify-skills"; COMMANDS_DIR=".claude/commands/asciify-skills" ;;
         *) error "Invalid choice" ;;
       esac
       ;;
@@ -117,10 +124,23 @@ do_install() {
     success "Installed ${skill}"
   done
 
+  # Install slash commands to commands/ directory
+  info "Installing commands to ${COMMANDS_DIR}..."
+  mkdir -p "${COMMANDS_DIR}"
+
+  for cmd in "${COMMAND_FILES[@]}"; do
+    # Strip the "asciify-skills-" prefix for the destination filename
+    # e.g. asciify-skills-update.md -> update.md
+    local dest_name="${cmd#asciify-skills-}"
+    download_file "skills/${cmd}" "${COMMANDS_DIR}/${dest_name}"
+    success "Installed command ${dest_name}"
+  done
+
   echo ""
   success "Asciify Skills installed!"
   echo ""
   info "Skills location: ${INSTALL_DIR}"
+  info "Commands location: ${COMMANDS_DIR}"
   info "Skills activate automatically based on the files you work with."
   echo ""
   info "Management commands (inside Claude Code):"
@@ -137,17 +157,29 @@ do_uninstall() {
 
   # Check global install
   local global_dir="${HOME}/.claude/skills/asciify-skills"
+  local global_cmds="${HOME}/.claude/commands/asciify-skills"
   if [[ -d "${global_dir}" ]]; then
     rm -rf "${global_dir}"
-    success "Removed global install from ${global_dir}"
+    success "Removed global skills from ${global_dir}"
+    found=true
+  fi
+  if [[ -d "${global_cmds}" ]]; then
+    rm -rf "${global_cmds}"
+    success "Removed global commands from ${global_cmds}"
     found=true
   fi
 
   # Check local install
   local local_dir=".claude/skills/asciify-skills"
+  local local_cmds=".claude/commands/asciify-skills"
   if [[ -d "${local_dir}" ]]; then
     rm -rf "${local_dir}"
-    success "Removed local install from ${local_dir}"
+    success "Removed local skills from ${local_dir}"
+    found=true
+  fi
+  if [[ -d "${local_cmds}" ]]; then
+    rm -rf "${local_cmds}"
+    success "Removed local commands from ${local_cmds}"
     found=true
   fi
 

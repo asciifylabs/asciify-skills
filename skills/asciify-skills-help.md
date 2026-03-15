@@ -10,8 +10,10 @@ Show the user the current status of their asciify-skills installation.
 ## Steps
 
 1. Check for installations:
-   - Global: `~/.claude/skills/asciify-skills/`
-   - Local: `.claude/skills/asciify-skills/`
+   - Global skills: `~/.claude/skills/asciify-skills/`
+   - Global commands: `~/.claude/commands/asciify-skills/`
+   - Local skills: `.claude/skills/asciify-skills/`
+   - Local commands: `.claude/commands/asciify-skills/`
 
 2. For each installation found, read `.version` and list the installed skill files.
 
@@ -20,7 +22,8 @@ Show the user the current status of their asciify-skills installation.
 ```
 Asciify Skills — Status
 
-Install location: ~/.claude/skills/asciify-skills/
+Skills location: ~/.claude/skills/asciify-skills/
+Commands location: ~/.claude/commands/asciify-skills/
 Version: <sha from .version>
 
 Installed skills (auto-triggered):

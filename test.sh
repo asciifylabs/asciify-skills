@@ -209,19 +209,32 @@ cd "${TEMP_PROJECT}" && git init --quiet
 if bash "${SCRIPT_DIR}/install.sh" --local > /dev/null 2>&1; then
   pass "Local install completed"
 
-  # Verify files were installed
+  # Verify skill files were installed
   installed_count=0
-  for skill in "${EXPECTED_SKILLS[@]}" "${MGMT_SKILLS[@]}"; do
+  for skill in "${EXPECTED_SKILLS[@]}"; do
     if [[ -f ".claude/skills/asciify-skills/${skill}" ]]; then
       installed_count=$((installed_count + 1))
     fi
   done
 
-  total_expected=$(( ${#EXPECTED_SKILLS[@]} + ${#MGMT_SKILLS[@]} ))
-  if [[ ${installed_count} -eq ${total_expected} ]]; then
-    pass "All ${total_expected} skill files installed"
+  if [[ ${installed_count} -eq ${#EXPECTED_SKILLS[@]} ]]; then
+    pass "All ${#EXPECTED_SKILLS[@]} skill files installed to skills/"
   else
-    fail "Only ${installed_count}/${total_expected} skill files installed"
+    fail "Only ${installed_count}/${#EXPECTED_SKILLS[@]} skill files installed to skills/"
+  fi
+
+  # Verify command files were installed to commands directory
+  cmd_count=0
+  for cmd in update.md uninstall.md help.md; do
+    if [[ -f ".claude/commands/asciify-skills/${cmd}" ]]; then
+      cmd_count=$((cmd_count + 1))
+    fi
+  done
+
+  if [[ ${cmd_count} -eq 3 ]]; then
+    pass "All 3 command files installed to commands/"
+  else
+    fail "Only ${cmd_count}/3 command files installed to commands/"
   fi
 
   # Verify .version was installed
@@ -237,9 +250,14 @@ fi
 # Test: uninstall
 if bash "${SCRIPT_DIR}/install.sh" --uninstall > /dev/null 2>&1; then
   if [[ ! -d ".claude/skills/asciify-skills" ]]; then
-    pass "Uninstall removed skill directory"
+    pass "Uninstall removed skills directory"
   else
-    fail "Uninstall did not remove skill directory"
+    fail "Uninstall did not remove skills directory"
+  fi
+  if [[ ! -d ".claude/commands/asciify-skills" ]]; then
+    pass "Uninstall removed commands directory"
+  else
+    fail "Uninstall did not remove commands directory"
   fi
 else
   fail "Uninstall failed"

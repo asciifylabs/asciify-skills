@@ -37,15 +37,23 @@ You are updating the asciify-skills installation. Follow these steps exactly.
      security-principles.md \
      shell-principles.md \
      terraform-principles.md \
-     asciify-skills-update.md \
-     asciify-skills-uninstall.md \
-     asciify-skills-help.md \
      .version; do
      curl -sSfL "${REPO_RAW}/${file}" -o "${INSTALL_DIR}/${file}"
    done
    ```
 
-5. Report what was updated: show the old and new version (SHA), and confirm success.
+5. Update the slash command files in the commands directory:
+   - For global installs, the commands directory is `~/.claude/commands/asciify-skills/`
+   - For local installs, the commands directory is `.claude/commands/asciify-skills/`
+   ```bash
+   COMMANDS_DIR="${INSTALL_DIR/skills/commands}"
+   mkdir -p "${COMMANDS_DIR}"
+   for file in update.md uninstall.md help.md; do
+     curl -sSfL "${REPO_RAW}/asciify-skills-${file}" -o "${COMMANDS_DIR}/${file}"
+   done
+   ```
+
+6. Report what was updated: show the old and new version (SHA), and confirm success.
 
 ## Important
 
