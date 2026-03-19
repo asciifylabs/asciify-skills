@@ -21,25 +21,26 @@ You are updating the asciify-skills installation. Follow these steps exactly.
    curl -sSfL "https://raw.githubusercontent.com/asciifylabs/asciify-skills/main/skills/.version" 2>/dev/null
    ```
 
-4. Download each skill file from GitHub and overwrite the local copy:
+4. Download each skill file from GitHub and overwrite the local copy. Skills use the `<name>/SKILL.md` subdirectory structure:
    ```bash
    REPO_RAW="https://raw.githubusercontent.com/asciifylabs/asciify-skills/main/skills"
-   for file in \
-     ai-principles.md \
-     ansible-principles.md \
-     docker-principles.md \
-     git-principles.md \
-     go-principles.md \
-     kubernetes-principles.md \
-     nodejs-principles.md \
-     python-principles.md \
-     rust-principles.md \
-     security-principles.md \
-     shell-principles.md \
-     terraform-principles.md \
-     .version; do
-     curl -sSfL "${REPO_RAW}/${file}" -o "${INSTALL_DIR}/${file}"
+   for skill in \
+     ai-principles \
+     ansible-principles \
+     docker-principles \
+     git-principles \
+     go-principles \
+     kubernetes-principles \
+     nodejs-principles \
+     python-principles \
+     rust-principles \
+     security-principles \
+     shell-principles \
+     terraform-principles; do
+     mkdir -p "${INSTALL_DIR}/${skill}"
+     curl -sSfL "${REPO_RAW}/${skill}/SKILL.md" -o "${INSTALL_DIR}/${skill}/SKILL.md"
    done
+   curl -sSfL "${REPO_RAW}/.version" -o "${INSTALL_DIR}/.version"
    ```
 
 5. Update the slash command files in the commands directory:
