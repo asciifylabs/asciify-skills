@@ -10,20 +10,19 @@ REPO="asciifylabs/asciify-skills"
 BRANCH="main"
 RAW_BASE="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
 
-SKILL_FILES=(
-  ai-principles.md
-  ansible-principles.md
-  docker-principles.md
-  git-principles.md
-  go-principles.md
-  kubernetes-principles.md
-  nodejs-principles.md
-  python-principles.md
-  rust-principles.md
-  security-principles.md
-  shell-principles.md
-  terraform-principles.md
-  .version
+SKILL_NAMES=(
+  ai-principles
+  ansible-principles
+  docker-principles
+  git-principles
+  go-principles
+  kubernetes-principles
+  nodejs-principles
+  python-principles
+  rust-principles
+  security-principles
+  shell-principles
+  terraform-principles
 )
 
 # Command files — installed to commands/ directory for slash command registration
@@ -93,7 +92,7 @@ resolve_install_dir() {
 
 # Detect if running from a local copy of the repo
 SCRIPT_DIR=""
-if [[ -n "${BASH_SOURCE[0]:-}" ]] && [[ -f "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/skills/security-principles.md" ]]; then
+if [[ -n "${BASH_SOURCE[0]:-}" ]] && [[ -f "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/skills/security-principles/SKILL.md" ]]; then
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
@@ -119,10 +118,14 @@ do_install() {
   info "Installing skills to ${INSTALL_DIR}..."
   mkdir -p "${INSTALL_DIR}"
 
-  for skill in "${SKILL_FILES[@]}"; do
-    download_file "skills/${skill}" "${INSTALL_DIR}/${skill}"
+  for skill in "${SKILL_NAMES[@]}"; do
+    mkdir -p "${INSTALL_DIR}/${skill}"
+    download_file "skills/${skill}/SKILL.md" "${INSTALL_DIR}/${skill}/SKILL.md"
     success "Installed ${skill}"
   done
+
+  # Install version file
+  download_file "skills/.version" "${INSTALL_DIR}/.version"
 
   # Install slash commands to commands/ directory
   info "Installing commands to ${COMMANDS_DIR}..."

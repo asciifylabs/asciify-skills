@@ -1,7 +1,7 @@
 ---
 name: docker-principles
 description: "Use when writing, reviewing, or modifying Dockerfiles, docker-compose files, or container configurations"
-globs: ["**/Dockerfile", "**/Dockerfile.*", "**/docker-compose*.yml", "**/docker-compose*.yaml", "**/.dockerignore"]
+globs: ["**/Dockerfile", "**/Dockerfile.*", "**/compose.yaml", "**/compose.yml", "**/docker-compose*.yml", "**/docker-compose*.yaml", "**/.dockerignore"]
 ---
 
 # Docker Principles

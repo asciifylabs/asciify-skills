@@ -40,7 +40,7 @@ get_globs() {
     kubernetes) echo '["**/k8s/**/*.yml", "**/k8s/**/*.yaml", "**/helm/**/*.yml", "**/helm/**/*.yaml", "**/Chart.yaml", "**/values.yaml"]' ;;
     ai)         echo '["**/*.py", "**/*.ts", "**/*.js"]' ;;
     git)        echo "" ;;
-    docker)     echo '["**/Dockerfile", "**/Dockerfile.*", "**/docker-compose*.yml", "**/docker-compose*.yaml", "**/.dockerignore"]' ;;
+    docker)     echo '["**/Dockerfile", "**/Dockerfile.*", "**/compose.yaml", "**/compose.yml", "**/docker-compose*.yml", "**/docker-compose*.yaml", "**/.dockerignore"]' ;;
     *)          echo "" ;;
   esac
 }
@@ -267,7 +267,9 @@ for category_dir in "${SCRIPT_DIR}"/*/; do
     continue
   fi
 
-  output_file="${SKILLS_DIR}/${category}-principles.md"
+  skill_subdir="${SKILLS_DIR}/${category}-principles"
+  mkdir -p "${skill_subdir}"
+  output_file="${skill_subdir}/SKILL.md"
   trigger="$(get_trigger "${category}")"
   display_name="$(get_display_name "${category}")"
   globs="$(get_globs "${category}")"
